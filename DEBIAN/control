@@ -1,0 +1,9 @@
+Package: storiq-objet-logger
+Version: 1.1.3
+Section: Intellique
+Priority: optional
+Architecture: all
+Depends: liblog-log4perl-perl (>=1.07-1), libmail-sender-perl (>=0.8.13-3), libnet-snmp-perl (>=5.2.0-1)
+Maintainer: Developers Team <dev@intellique.com>
+Description: storiq-objet-logger
+ Objet de gestion des logs
