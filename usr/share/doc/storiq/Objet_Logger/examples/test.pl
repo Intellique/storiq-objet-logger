@@ -1,7 +1,8 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
 # Utilisation de l'objet log :
 use strict;
+use warnings;
 
 use Objet_Logger;
 use Data::Dumper;
@@ -18,9 +19,9 @@ $mon_log2->error("error");
 $mon_log2->fatal("fatal");
 $mon_log2->off("off");
 
-$mon_log2->configure_mail( 'smtp.free.fr', 'support@intellique.com',
-    'support@intellique.com' );
-$mon_log2->mail( 'Oh yeah!!!!!!!!!!!', 'Salut les', ' poulettes' );
+$mon_log2->configure_mail( { smtp => 'mail.intellique.com', from => 'support@intellique.com',
+    to => 'support@intellique.com', auth => 'PLAIN', authid => 'support@intellique.com', authpwd => 'password' } );
+$mon_log2->mail( 'Oh yeah, auth!!!!!!!!!!!', 'Salut les', ' poulettes' );
 
 $mon_log2->configure_snmp( 'localhost', '162', 'public', 'SNMPv1',
     '1.3.6.1.4.1' );

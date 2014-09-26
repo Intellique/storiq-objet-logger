@@ -58,15 +58,14 @@ sub new {
     if ($file) {
         $log->set_conf(
             \qq{
-log4perl.logger                                     = INFO, LOG-INFO
+log4perl.logger                                     = DE, LOG-INFO
 log4perl.appender.LOG-INFO                          = Log::Log4perl::Appender::File
 log4perl.appender.LOG-INFO.filename                 = $file
 log4perl.appender.LOG-INFO.layout                   = Log::Log4perl::Layout::PatternLayout
 log4perl.appender.LOG-INFO.layout.ConversionPattern = %d [%p] %m %n
 }
         );
-    }
-    else {
+    } else {
         $log->set_conf(
             \qq{
 log4perl.logger                                     = ALL, LOG-INFO, LOG-WARN
@@ -176,31 +175,28 @@ sub off {
 
 sub configure_mail {
     my $self = shift;
-    my $smtp = shift;
-    my $from = shift;
-    my @to   = @_;
 
-    $self->debug("Objet_Logger : function configure_mail : $smtp");
-    $self->debug("Objet_Logger : function configure_mail : $from");
-    $self->debug( "Objet_Logger : function configure_mail : ",
-        join( ",", @_ ) );
+    my $params = shift;
 
-# Je verifie la presence du ou des destinataires. Il n'est pas necessaire de vérifier la presence des autres arguments
-# car le contenu des variables n'est pas vérifier
-    unless (@to) {
+    return ( 1, "bad parameters, not a hash" ) 
+		unless ( ref($params) eq 'HASH' );
+
+    $self->debug("Objet_Logger : function configure_mail : $params->{smtp}");
+    $self->debug("Objet_Logger : function configure_mail : $params->{from}");
+    $self->debug("Objet_Logger : function configure_mail : $params->{auth}");
+    $self->debug("Objet_Logger : function configure_mail : $params->{authid}");
+    $self->debug("Objet_Logger : function configure_mail : $params->{authpwd}");
+    $self->debug("Objet_Logger : function configure_mail : $params->{to}");
+
+    # check recipient
+    unless ( $params->{to} ) {
         $self->error(
-            "Objet_Logger : configure_mail : Not enough parameters : No recipient email address found"
+"Objet_Logger : configure_mail : Not enough parameters : No recipient email address found"
         );
         return 1, "Not enough parameters : No recipient email address found";
     }
 
-    my %mail = (
-        smtp => $smtp,
-        from => $from,
-        to   => ( join ',', @to ),
-    );
-
-    $self->{MAIL} = \%mail;
+    $self->{MAIL} = $params;
     return 0;
 }
 
@@ -210,15 +206,19 @@ sub mail {
     my $message = join "", @_;
 
     $self->debug( "Objet_Logger : function mail : " . $subject )
-        if ($subject);
+      if ($subject);
     $self->debug( "Objet_Logger : function mail : " . $message )
-        if ($message);
+      if ($message);
 
     my $sender = Mail::Sender->new(
-        {   from    => $self->{MAIL}{from},
+        {
+            from    => $self->{MAIL}{from},
             to      => $self->{MAIL}{to},
             subject => $subject,
             smtp    => $self->{MAIL}{smtp},
+            auth    => $self->{MAIL}{auth},
+            authid  => $self->{MAIL}{authid},
+            authpwd => $self->{MAIL}{authpwd},
         }
     );
 
@@ -247,21 +247,21 @@ sub configure_snmp {
     my %snmp;
 
     $self->debug("Objet_Logger : function configure_snmp : $host_manager")
-        if ($host_manager);
+      if ($host_manager);
     $self->debug("Objet_Logger : function configure_snmp : $udp_port")
-        if ($udp_port);
+      if ($udp_port);
     $self->debug("Objet_Logger : function configure_snmp : $community")
-        if ($community);
+      if ($community);
     $self->debug("Objet_Logger : function configure_snmp : $version_snmp")
-        if ($version_snmp);
+      if ($version_snmp);
     $self->debug("Objet_Logger : function configure_snmp : $OID_enterprise")
-        if ($OID_enterprise);
+      if ($OID_enterprise);
 
 # Je verifie la presence de l'OID_enterprise. Il n'est pas necessaire de vérifier la presence des autres arguments
 #car le contenu des variables n'est pas vérifier
     unless ($OID_enterprise) {
         $self->error(
-            "Objet_Logger : configure_snmp : Not enough parameter : Enterprise OID not found."
+"Objet_Logger : configure_snmp : Not enough parameter : Enterprise OID not found."
         );
         return 1, "Not enough parameter : Enterprise OID not found.";
     }
@@ -296,8 +296,7 @@ sub snmp {
 #car le contenu des variables n'est pas vérifier
     unless ( defined $spe_trap ) {
         $self->error(
-            "Objet_Logger : snmp : Not enough parameter : spe_trap not found"
-        );
+            "Objet_Logger : snmp : Not enough parameter : spe_trap not found" );
         return 1, "Not enough parameter : spe_trap not found";
     }
 
@@ -315,10 +314,8 @@ sub snmp {
         return 1, $err;
     }
 
-    my @oid_value = (
-        $self->{SNMP}{'OID_enterprise'} . "." . $oid,
-        OCTET_STRING, $message,
-    );
+    my @oid_value =
+      ( $self->{SNMP}{'OID_enterprise'} . "." . $oid, OCTET_STRING, $message, );
 
     my $result = $session->trap(
         -enterprise   => $self->{SNMP}{'OID_enterprise'},
@@ -347,9 +344,8 @@ sub _get_uptime {
 
     # Read the uptime in seconds from /proc/uptime, skip the idle time...
     open FILE, "< /proc/uptime"
-        or
-        error( $self, "Objet_Logger : snmp : Cannot open /proc/uptime: $!" )
-        and return 0;
+      or error( $self, "Objet_Logger : snmp : Cannot open /proc/uptime: $!" )
+      and return 0;
     my ( $uptime, undef ) = split /\./, <FILE>;
     close FILE;
     return $uptime . "00";
