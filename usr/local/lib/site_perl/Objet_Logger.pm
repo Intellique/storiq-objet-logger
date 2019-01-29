@@ -58,7 +58,7 @@ sub new {
     if ($file) {
         $log->set_conf(
             \qq{
-log4perl.logger                                     = DE, LOG-INFO
+log4perl.logger                                     = DEBUG, LOG-INFO
 log4perl.appender.LOG-INFO                          = Log::Log4perl::Appender::File
 log4perl.appender.LOG-INFO.filename                 = $file
 log4perl.appender.LOG-INFO.layout                   = Log::Log4perl::Layout::PatternLayout
